@@ -35,7 +35,9 @@ commands:
 
       - run:
           name: Install dependencies
-          command: bundle check --path vendor/bundle || bundle install --deployment --path vendor/bundle
+          command: |
+            bundle config set path vendor/bundle
+            bundle check || bundle install --deployment
 
       - save_cache:
           key: rails-bundle-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile.lock" }}

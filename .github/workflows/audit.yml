@@ -32,7 +32,8 @@ jobs:
       - name: Install dependencies
         run: |
           gem install bundler
-          bundle check --path vendor/bundle || bundle install
+          bundle config set path vendor/bundle
+          bundle check || bundle install --deployment
 
       - name: Audit gems
         run: bundle exec bundle audit check --update
