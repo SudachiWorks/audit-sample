@@ -1,0 +1,154 @@
+version: 2.1
+executors:
+  ruby:
+    working_directory: ~/audit
+    shell: /bin/bash --login
+    docker:
+      - image: circleci/ruby:2.7.1
+
+  node:
+    working_directory: ~/audit
+    shell: /bin/bash --login
+    docker:
+      - image: circleci/node:12.18.3
+
+commands:
+  setup_bundler:
+    description: Setup bundler
+    steps:
+      - run:
+          name: Configure bundler
+          command: |
+            echo 'export BUNDLER_VERSION=$(cat Gemfile.lock | tail -1 | tr -d " ")' >> $BASH_ENV
+            source $BASH_ENV
+            gem install bundler
+
+      - run:
+          name: Which bundler?
+          command: bundle -v
+
+      - restore_cache:
+          keys:
+            - bundle-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
+            - bundle-v1-{{ arch }}-{{ .Branch }}
+            - bundle-v1
+
+      - run:
+          name: Install dependencies
+          command: bundle check --path vendor/bundle || bundle install --deployment --path vendor/bundle
+
+      - save_cache:
+          key: rails-bundle-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
+          paths:
+            - vendor/bundle
+
+  setup_npm:
+    description: Setup npm
+    steps:
+      - restore_cache:
+          keys:
+            - npm-v1-{{ arch }}-{{ .Branch }}-{{ checksum "package-lock.json" }}
+            - npm-v1-{{ arch }}-{{ .Branch }}
+            - npm-v1
+
+      - run:
+          name: Install dependencies
+          command: npm ci
+
+      - save_cache:
+          key: npm-v1-{{ arch }}-{{ .Branch }}-{{ checksum "package-lock.json" }}
+          paths:
+            - ~/.npm
+
+  setup_yarn:
+    description: Setup yarn
+    steps:
+      - restore_cache:
+          keys:
+            - rails-yarn-v1-{{ arch }}-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - rails-yarn-v1-{{ arch }}-{{ .Branch }}
+            - rails-yarn-v1
+
+      - run:
+          name: Install dependencies
+          command: yarn install --check-files --cache-folder ~/.cache/yarn
+
+      - run:
+          name: Check yarn integrity
+          command: yarn check --integrity
+
+      - save_cache:
+          key: yarn-v1-{{ arch }}-{{ .Branch }}-{{ checksum "yarn.lock" }}
+          paths:
+            - ~/.cache/yarn
+
+  audit_gems:
+    description: Audit gems
+    steps:
+      - run:
+          name: Audit gems
+          command: bundle exec bundle audit check --update
+
+  audit_npm:
+    description: Audit npm
+    steps:
+      - run:
+          name: Audit npm
+          command: npm audit
+
+  audit_yarn:
+    description: Audit yarn
+    steps:
+      - run:
+          name: Audit yarn
+          command: yarn audit
+
+jobs:
+  audit_gems:
+    executor: ruby
+    steps:
+      - checkout
+      - setup_bundler
+      - audit_gems
+
+  audit_npm:
+    executor: node
+    steps:
+      - checkout
+      - setup_npm
+      - audit_npm
+
+  audit_yarn:
+    executor: node
+    steps:
+      - checkout
+      - setup_yarn
+      - audit_yarn
+
+  lint_ruby:
+    executor: app
+    steps:
+      - checkout
+      - setup_bundler
+      - rubocop
+
+workflows:
+  version: 2
+  commit:
+    jobs:
+      - audit_gems
+      - audit_npm
+      - audit_yarn
+
+  daily:
+    triggers:
+      - schedule:
+          cron: "0 0 * * *"
+          filters:
+            branches:
+              only:
+                - master
+    jobs:
+      - audit_gems
+      - audit_npm
+      - audit_yarn
