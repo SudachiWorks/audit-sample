@@ -40,7 +40,7 @@ commands:
             bundle check || bundle install --deployment
 
       - save_cache:
-          key: rails-bundle-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
+          key: bundle-v1-{{ arch }}-{{ .Branch }}-{{ checksum "Gemfile.lock" }}
           paths:
             - vendor/bundle
 
@@ -67,9 +67,9 @@ commands:
     steps:
       - restore_cache:
           keys:
-            - rails-yarn-v1-{{ arch }}-{{ .Branch }}-{{ checksum "yarn.lock" }}
-            - rails-yarn-v1-{{ arch }}-{{ .Branch }}
-            - rails-yarn-v1
+            - yarn-v1-{{ arch }}-{{ .Branch }}-{{ checksum "yarn.lock" }}
+            - yarn-v1-{{ arch }}-{{ .Branch }}
+            - yarn-v1
 
       - run:
           name: Install dependencies
