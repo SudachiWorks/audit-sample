@@ -10,7 +10,7 @@ executors:
     working_directory: ~/audit
     shell: /bin/bash --login
     docker:
-      - image: circleci/node:12.22.1
+      - image: circleci/node:15.14.0
 
 commands:
   setup_bundler:
