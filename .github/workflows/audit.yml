@@ -18,7 +18,7 @@ jobs:
           ruby-version: 2.7.1
 
       - name: Cache bundler
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         env:
           cache-version: v1
         with:
@@ -51,7 +51,7 @@ jobs:
           node-version: 12.x
 
       - name: Cache npm
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         env:
           cache-version: v1
         with:
@@ -83,7 +83,7 @@ jobs:
           node-version: 12.x
 
       - name: Cache yarn
-        uses: actions/cache@v1
+        uses: actions/cache@v3
         env:
           cache-version: v1
         with:
